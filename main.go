@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"path/filepath"
 	"regexp"
 	"slices"
 	"strings"
@@ -14,9 +15,40 @@ import (
 var rounds = []string{"[SPLIT/STEAL]", "[ROUND 1]", "[ROUND 2]", "[ROUND 3]", "[END]"}
 
 func main() {
-	filename := os.Args[1]
+	path := os.Args[1]
+	fmt.Printf("given path: %v\n", path)
 
-	file, err := os.Open(filename)
+	fileInfo, err := os.Stat(path)
+	if err != nil {
+		log.Fatalf("Failed to find given path: %s", err)
+	}
+
+	files := make([]string, 0)
+	if fileInfo.IsDir() {
+		dirEnts, err := os.ReadDir(path)
+		if err != nil {
+			log.Fatalf("failed reading files from dir due to %v", err)
+		}
+		fmt.Printf("found %v files in directory\n", len(dirEnts))
+		for _, curr := range dirEnts {
+			if !strings.HasSuffix(curr.Name(), ".txt") {
+				fmt.Printf("ignoring file %v because not .txt\n", curr)
+				continue
+			}
+			files = append(files, filepath.Join(path, curr.Name()))
+		}
+	} else {
+		files = append(files, path)
+	}
+
+	for _, curr := range files {
+		validateFile(curr)
+	}
+}
+
+func validateFile(path string) {
+	fmt.Printf("\nchecking %v\n", path)
+	file, err := os.Open(path)
 	if err != nil {
 		log.Fatalf("Failed to open file: %s", err)
 	}
